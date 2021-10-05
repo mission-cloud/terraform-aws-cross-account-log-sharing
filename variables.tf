@@ -22,7 +22,7 @@ variable "destination_name" {
 variable "target_arn" {
   description = "The Amazon Resource Name (ARN) of the AWS resource that you want to use as the destination of the subscription feed."
   type        = string
-  default = ""
+  default     = ""
 }
 
 variable "access_policy" {
@@ -77,15 +77,15 @@ variable "cw_kinesis_role_name" {
   default     = "CWToKinesis"
 }
 
-variable "destination_log_group" {
-  description = "The CloudWatch log group name that is the destination for the Kinesis stream"
-  type        = string
-  default     = "KinesisDestination"
-}
-
 # Subscription filter pattern to search for and match terms, phrases, or values in log events.
 variable "log_subscription_filter_pattern" {
   description = "Subscription filter pattern to search for and match terms, phrases, or values in log events."
+  type        = string
+  default     = " "
+}
+
+variable "log_subscription_filter_name" {
+  description = "The name of the sending account's subscription filter for a log group"
   type = string
-  default = " "
+  default = "All - ' '"
 }
