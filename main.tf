@@ -1,3 +1,9 @@
+# TODO - uncomment this provider if you want to run tf commands in the module ie: tf validate
+# Dummy provider to appease the TF cli and do 'validate', etc.
+#provider "aws" {
+#  alias = "sender"
+#}
+
 locals {
   access_policy = var.access_policy != "" ? jsonencode(var.access_policy) : data.aws_iam_policy_document.sender_log_destination_access.json
   global_tags = {
@@ -5,39 +11,48 @@ locals {
     CreatedBy            = "MissionCloud"
     "Mission:Department" = "ConsultingServices"
   }
-  target_arn = var.target_arn != "" ? var.target_arn : aws_kinesis_stream.this[0].arn
-}
-
-# Dummy provider to appease the TF cli and do 'validate', etc.
-provider "aws" {
-  alias = "sender"
+  target_arn = var.target_arn != "" ? var.target_arn : aws_kinesis_firehose_delivery_stream.this[0].arn
 }
 
 #######################################
 ## Data Stream
 #######################################
-resource "aws_kinesis_firehose_delivery_stream" "this" {
-  destination = ""
-  name        = ""
+# The role that lets Kinesis assume it
+resource "aws_iam_role" "firehose" {
+  name = "FirehoseS3"
+  assume_role_policy = data.aws_iam_policy_document.trust_firehose.json
 }
-# The destination Kinesis stream
-resource "aws_kinesis_stream" "this" {
-  count            = var.target_arn != "" ? 0 : 1
-  name             = var.destination_name
-  shard_count      = var.data_stream_shard_count
-  retention_period = var.stream_retention_period
-  encryption_type  = var.stream_encryption_type
-  kms_key_id       = var.stream_kms_key_id
-  tags             = merge(local.global_tags, var.global_tags)
-  dynamic "timeouts" {
-    for_each = var.stream_timeouts
-    content {
-      create = timeouts.value.create
-      update = timeouts.value.update
-      delete = timeouts.value.delete
-    }
+
+# The destination for the log destination resource type; sends data in the stream to S3
+resource "aws_kinesis_firehose_delivery_stream" "this" {
+  count = var.target_arn != "" ? 0 : 1
+  destination = "extended_s3"
+  name        = var.destination_name
+
+  extended_s3_configuration {
+    bucket_arn = aws_s3_bucket.this.arn
+    role_arn = aws_iam_role.firehose.arn
   }
 }
+
+# The destination Kinesis stream
+#resource "aws_kinesis_stream" "this" {
+#  count            = var.target_arn != "" ? 0 : 1
+#  name             = var.destination_name
+#  shard_count      = var.data_stream_shard_count
+#  retention_period = var.stream_retention_period
+#  encryption_type  = var.stream_encryption_type
+#  kms_key_id       = var.stream_kms_key_id
+#  tags             = merge(local.global_tags, var.global_tags)
+#  dynamic "timeouts" {
+#    for_each = var.stream_timeouts
+#    content {
+#      create = timeouts.value.create
+#      update = timeouts.value.update
+#      delete = timeouts.value.delete
+#    }
+#  }
+#}
 
 # This IAM role will allow CloudWatch to ship logs to the Kinesis stream
 resource "aws_iam_role" "cw_to_kinesis" {
@@ -50,10 +65,21 @@ resource "aws_iam_policy" "cw_to_kinesis" {
   policy = data.aws_iam_policy_document.cwl_to_kinesis.json
 }
 
+# This policy allows access to S3
+resource "aws_iam_policy" "kinesis_s3" {
+  policy = data.aws_iam_policy_document.firehose_s3.json
+}
+
 # This attaches the IAM policy, that allows log shipping, to the role used by CloudWatch
 resource "aws_iam_role_policy_attachment" "cw_kinesis" {
   policy_arn = aws_iam_policy.cw_to_kinesis.arn
   role       = aws_iam_role.cw_to_kinesis.name
+}
+
+# This role is assumed by Kinesis in order to ship logs to S3 per the policy
+resource "aws_iam_role_policy_attachment" "kinesis_s3" {
+  policy_arn = aws_iam_policy.kinesis_s3.arn
+  role       = aws_iam_role.firehose.name
 }
 
 # The CloudWatch Logs destination resource in the receiver account. This is the 'shared' component between the sender and receiver accounts.
@@ -83,4 +109,8 @@ resource "aws_cloudwatch_log_subscription_filter" "sender" {
 #######################################
 ## Data Consumers
 #######################################
-resource "" "" {}
+# Shared logs bucket in the reciever account
+resource "aws_s3_bucket" "this" {
+  bucket_prefix = "firehose-shared-logs"
+  acl = "private"
+}

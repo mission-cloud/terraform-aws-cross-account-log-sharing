@@ -8,6 +8,7 @@ variable "log_data_sender" {
   description = "AWS Account number for the data sender."
   type        = string
 }
+
 variable "log_data_destination" {
   description = "AWS Account number for the destination."
   type        = string
@@ -16,7 +17,7 @@ variable "log_data_destination" {
 variable "destination_name" {
   description = "The name of the destination you want to create."
   type        = string
-  default     = "RecipientStream"
+  default     = "SharedLogsRecipientStream"
 }
 
 variable "target_arn" {
@@ -86,6 +87,6 @@ variable "log_subscription_filter_pattern" {
 
 variable "log_subscription_filter_name" {
   description = "The name of the sending account's subscription filter for a log group"
-  type = string
-  default = "All - ' '"
+  type        = string
+  default     = "All - ' '"
 }
