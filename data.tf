@@ -59,8 +59,8 @@ data "aws_iam_policy_document" "sender_log_destination_access" {
 
 data "aws_iam_policy_document" "firehose_s3" {
   statement {
-    sid = "AllowFirehoseS3"
-    effect = "Allow"
+    sid       = "AllowFirehoseS3"
+    effect    = "Allow"
     resources = ["*"]
     actions = [
       "*"

@@ -3,15 +3,9 @@
 #provider "aws" {
 #  alias = "sender"
 #}
-
 locals {
   access_policy = var.access_policy != "" ? jsonencode(var.access_policy) : data.aws_iam_policy_document.sender_log_destination_access.json
-  global_tags = {
-    Module               = "terraform-aws-cross-account-logs"
-    CreatedBy            = "MissionCloud"
-    "Mission:Department" = "ConsultingServices"
-  }
-  target_arn = var.target_arn != "" ? var.target_arn : aws_kinesis_firehose_delivery_stream.this[0].arn
+  target_arn    = var.target_arn != "" ? var.target_arn : aws_kinesis_firehose_delivery_stream.this[0].arn
 }
 
 #######################################
@@ -19,40 +13,23 @@ locals {
 #######################################
 # The role that lets Kinesis assume it
 resource "aws_iam_role" "firehose" {
-  name = "FirehoseS3"
+  name               = "FirehoseS3"
   assume_role_policy = data.aws_iam_policy_document.trust_firehose.json
 }
 
 # The destination for the log destination resource type; sends data in the stream to S3
 resource "aws_kinesis_firehose_delivery_stream" "this" {
-  count = var.target_arn != "" ? 0 : 1
+  count       = var.target_arn != "" ? 0 : 1
   destination = "extended_s3"
   name        = var.destination_name
 
   extended_s3_configuration {
     bucket_arn = aws_s3_bucket.this.arn
-    role_arn = aws_iam_role.firehose.arn
+    role_arn   = aws_iam_role.firehose.arn
   }
-}
 
-# The destination Kinesis stream
-#resource "aws_kinesis_stream" "this" {
-#  count            = var.target_arn != "" ? 0 : 1
-#  name             = var.destination_name
-#  shard_count      = var.data_stream_shard_count
-#  retention_period = var.stream_retention_period
-#  encryption_type  = var.stream_encryption_type
-#  kms_key_id       = var.stream_kms_key_id
-#  tags             = merge(local.global_tags, var.global_tags)
-#  dynamic "timeouts" {
-#    for_each = var.stream_timeouts
-#    content {
-#      create = timeouts.value.create
-#      update = timeouts.value.update
-#      delete = timeouts.value.delete
-#    }
-#  }
-#}
+  tags = merge({}, var.global_tags)
+}
 
 # This IAM role will allow CloudWatch to ship logs to the Kinesis stream
 resource "aws_iam_role" "cw_to_kinesis" {
@@ -112,5 +89,6 @@ resource "aws_cloudwatch_log_subscription_filter" "sender" {
 # Shared logs bucket in the reciever account
 resource "aws_s3_bucket" "this" {
   bucket_prefix = "firehose-shared-logs"
-  acl = "private"
+  acl           = "private"
+  tags          = merge({}, var.global_tags)
 }

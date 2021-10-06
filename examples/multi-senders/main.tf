@@ -57,5 +57,5 @@ module "cross_account_logs_222222222222" {
   log_data_destination = local.log_data_destination
   log_data_sender      = "222222222222"
   sender_log_group     = "vpcflowlogs"
-  target_arn = module.cross_account_logs_111111111111.target_arn
+  target_arn           = module.cross_account_logs_111111111111.target_arn
 }
