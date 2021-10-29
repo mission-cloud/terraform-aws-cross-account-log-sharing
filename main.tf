@@ -19,7 +19,7 @@ resource "aws_iam_role" "firehose" {
 
 # The destination for the log destination resource type; sends data in the stream to S3
 resource "aws_kinesis_firehose_delivery_stream" "this" {
-  count       = var.target_arn != "" ? 0 : 1
+  count       = var.create_firehose ? 1 : 0
   destination = "extended_s3"
   name        = var.destination_name
 

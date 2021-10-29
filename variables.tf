@@ -26,6 +26,12 @@ variable "target_arn" {
   default     = ""
 }
 
+variable "create_firehose" {
+  description = "Bool flag to create data stream in Kinesis"
+  type = bool
+  default = false
+}
+
 variable "access_policy" {
   description = "An IAM policy document (in JSON format, written using IAM policy grammar) that governs the set of users that are allowed to write to your destination."
   type        = string
