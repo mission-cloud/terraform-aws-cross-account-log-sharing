@@ -1,26 +1,21 @@
-# For multiple sending accounts, the log group name must be the same - WIP
-variable "sender_log_group" {
-  description = "The CloudWatch log group associated with the log data sender"
-  type        = string
+variable "log_data_sender_accounts" {
+  description = "The list of authorized accounts to put a subscription filter on the log destination"
+  type        = list(any)
+  default     = []
 }
 
-variable "log_data_sender" {
-  description = "AWS Account number for the data sender."
-  type        = string
-}
-
-variable "log_data_destination" {
+variable "log_data_destination_account" {
   description = "AWS Account number for the destination."
   type        = string
 }
 
-variable "destination_name" {
+variable "delivery_stream_name" {
   description = "The name of the destination you want to create."
   type        = string
   default     = "SharedLogsRecipientStream"
 }
 
-variable "target_arn" {
+variable "log_destination_target_arn" {
   description = "The Amazon Resource Name (ARN) of the AWS resource that you want to use as the destination of the subscription feed."
   type        = string
   default     = ""
@@ -28,8 +23,8 @@ variable "target_arn" {
 
 variable "create_firehose" {
   description = "Bool flag to create data stream in Kinesis"
-  type = bool
-  default = false
+  type        = bool
+  default     = false
 }
 
 variable "access_policy" {
@@ -46,12 +41,6 @@ variable "global_tags" {
     "Terraform:Module"   = "terraform-aws-cross-account-log-sharing"
     "Mission:Department" = "ConsultingServices"
   }
-}
-
-variable "cw_kinesis_role_name" {
-  description = "The name of the role that is allowed to send logs to the Kinesis stream"
-  type        = string
-  default     = "CWToKinesis"
 }
 
 # Subscription filter pattern to search for and match terms, phrases, or values in log events.
